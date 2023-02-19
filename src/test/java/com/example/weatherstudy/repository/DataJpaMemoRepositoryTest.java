@@ -13,7 +13,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 class DataJpaMemoRepositoryTest {
 
     @Autowired
-    private DataJpaMemoRepository jpaMemoRepository;
+    private DataJpaMemoRepository dataJpaMemoRepository;
 
     @Test
     void insertMemoTest() {
@@ -21,10 +21,10 @@ class DataJpaMemoRepositoryTest {
         Memo memo = new Memo(10, "this is jpa memo");
         System.out.println("memo = " + memo.getId());
         // when
-        Memo newMemo = jpaMemoRepository.save(memo);
+        Memo newMemo = dataJpaMemoRepository.save(memo);
         System.out.println("newMemo = " + newMemo.getId());
         // then
-        Memo result = jpaMemoRepository.findById(newMemo.getId()).get();
+        Memo result = dataJpaMemoRepository.findById(newMemo.getId()).get();
         System.out.println("result = " + result.getId());
         // jpaMemoRepository에서 저장된 Memo객체가 반환된다.
         assertThat(result.getId()).isEqualTo(newMemo.getId());
