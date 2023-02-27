@@ -32,6 +32,7 @@ public class DiaryService {
 
     private final DiaryRepository diaryRepository;
 
+    @Transactional
     public void createDiary(LocalDate date, String text) {
         // open weather map에서 데이터 받아오기
         String weatherData = getWeatherString();
@@ -106,13 +107,13 @@ public class DiaryService {
         return diaryRepository.findAllByDateBetween(startDate, endDate);
     }
 
+    @Transactional
     public void updateDiary(LocalDate date, String text) {
         Diary nowDiary = diaryRepository.getFirstByDate(date);
         nowDiary.setText(text);
-        diaryRepository.save(nowDiary);
     }
 
-    @Transactional
+
     public void deleteDiary(LocalDate date) {
         diaryRepository.deleteAllByDate(date);
     }
