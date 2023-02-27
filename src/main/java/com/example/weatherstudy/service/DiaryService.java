@@ -1,5 +1,12 @@
 package com.example.weatherstudy.service;
 
+import com.example.weatherstudy.domain.Diary;
+import com.example.weatherstudy.repository.DiaryRepository;
+import lombok.RequiredArgsConstructor;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -9,8 +16,12 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.LocalDate;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Service
+@RequiredArgsConstructor
 public class DiaryService {
     // 왜 @Value를 사용해서 key를 가져오는 것인가???
     // test나 실제에 따라 여러가지가 변경될 수 있기 때문에
@@ -19,10 +30,23 @@ public class DiaryService {
     @Value("${openweathermap.key}")
     private String apiKey;
 
+    private final DiaryRepository diaryRepository;
 
     public void createDiary(LocalDate date, String text) {
         // open weather map에서 데이터 받아오기
         String weatherData = getWeatherString();
+
+        // 받아온 날씨 json 파싱하기
+        Map<String, Object> parsedWeather = parseWeather(weatherData);
+
+        // 파싱된 데이터 + 일기 값 우리 db에 넣기
+        Diary nowDiary = new Diary();
+        nowDiary.setWeather(parsedWeather.get("main").toString());
+        nowDiary.setIcon(parsedWeather.get("icon").toString());
+        nowDiary.setTemperature((Double) parsedWeather.get("temp"));
+        nowDiary.setText(text);
+        nowDiary.setDate(date);
+        diaryRepository.save(nowDiary);
     }
 
     private String getWeatherString() {
@@ -50,5 +74,35 @@ public class DiaryService {
         } catch (Exception e) {
             return "failed to get response";
         }
+    }
+
+    private Map<String, Object> parseWeather(String jsonString) {
+        JSONParser jsonParser = new JSONParser();
+        JSONObject jsonObject;
+
+        try {
+            jsonObject = (JSONObject) jsonParser.parse(jsonString);
+        } catch (ParseException e) {
+            throw new RuntimeException();
+        }
+
+        Map<String, Object> resultMap = new HashMap<>();
+
+        JSONObject mainData = (JSONObject) jsonObject.get("main");
+        resultMap.put("temp", mainData.get("temp"));
+
+        JSONArray weatherArray = (JSONArray) jsonObject.get("weather");
+        JSONObject weatherData = (JSONObject) weatherArray.get(0);
+        resultMap.put("main", weatherData.get("main"));
+        resultMap.put("icon", weatherData.get("icon"));
+        return resultMap;
+    }
+
+    public List<Diary> readDiary(LocalDate date) {
+        return diaryRepository.findAllByDate(date);
+    }
+
+    public List<Diary> readDiaries(LocalDate startDate, LocalDate endDate) {
+        return diaryRepository.findAllByDateBetween(startDate, endDate);
     }
 }
