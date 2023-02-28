@@ -5,6 +5,7 @@ import com.example.weatherstudy.domain.Diary;
 import com.example.weatherstudy.repository.DateWeatherRepository;
 import com.example.weatherstudy.repository.DiaryRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -24,8 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class DiaryService {
     // 왜 @Value를 사용해서 key를 가져오는 것인가???
@@ -45,6 +46,7 @@ public class DiaryService {
     }
 
     private DateWeather getWeatherFromApi() {
+        log.info("[getWeatherFromApi] called");
         // open weather map에서 데이터 받아오기
         String weatherData = getWeatherString();
 
@@ -54,15 +56,17 @@ public class DiaryService {
                 .date(LocalDate.now())
                 .weather(parsedWeather.get("main").toString())
                 .temperature((Double) parsedWeather.get("temp"))
-                .icon(parsedWeather.get("main").toString())
+                .icon(parsedWeather.get("icon").toString())
                 .build();
     }
 
     @Transactional
     public void createDiary(LocalDate date, String text) {
+        log.info("started to create diary");
+
         // DB에서 확인하기
-        DateWeather weather = dateWeatherRepository.findById(date)
-                .orElseThrow(() -> new IllegalArgumentException("date 정보가 없습니다."));
+        DateWeather weather = dateWeatherRepository.findByDate(date)
+                .orElseGet(this::getWeatherFromApi);
 
         // 파싱된 데이터 + 일기 값 우리 db에 넣기
         Diary nowDiary = new Diary();
@@ -70,6 +74,7 @@ public class DiaryService {
         nowDiary.setText(text);
         nowDiary.setDate(date);
         diaryRepository.save(nowDiary);
+        log.info("end to create diary");
     }
 
     private String getWeatherString() {
