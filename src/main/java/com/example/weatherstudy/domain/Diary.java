@@ -1,9 +1,7 @@
 package com.example.weatherstudy.domain;
 
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -23,6 +21,11 @@ public class Diary {
     private String weather;
     private String icon;
     private double temperature;
-    private String text;
     private LocalDate date;
+    private String text;
+    public void setDateWeather(DateWeather dateWeather) {
+        date = dateWeather.getDate();
+        temperature = dateWeather.getTemperature();
+        icon = dateWeather.getIcon();
+    }
 }

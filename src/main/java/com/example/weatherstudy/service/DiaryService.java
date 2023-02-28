@@ -1,6 +1,8 @@
 package com.example.weatherstudy.service;
 
+import com.example.weatherstudy.domain.DateWeather;
 import com.example.weatherstudy.domain.Diary;
+import com.example.weatherstudy.repository.DateWeatherRepository;
 import com.example.weatherstudy.repository.DiaryRepository;
 import lombok.RequiredArgsConstructor;
 import org.json.simple.JSONArray;
@@ -8,6 +10,7 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,32 +22,51 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+
 
 @Service
 @RequiredArgsConstructor
 public class DiaryService {
     // 왜 @Value를 사용해서 key를 가져오는 것인가???
-    // test나 실제에 따라 여러가지가 변경될 수 있기 때문에
+    // -> test나 실제에 따라 여러가지가 변경될 수 있기 때문에
     // 변경과 무관하게 사용하기 위해 사용한다.
     // 예를 들면 DB변경
     @Value("${openweathermap.key}")
     private String apiKey;
 
     private final DiaryRepository diaryRepository;
+    private final DateWeatherRepository dateWeatherRepository;
 
     @Transactional
-    public void createDiary(LocalDate date, String text) {
+    @Scheduled(cron = "0 0 1 * * *")
+    public void saveWeatherDate() {
+        dateWeatherRepository.save(getWeatherFromApi());
+    }
+
+    private DateWeather getWeatherFromApi() {
         // open weather map에서 데이터 받아오기
         String weatherData = getWeatherString();
 
         // 받아온 날씨 json 파싱하기
         Map<String, Object> parsedWeather = parseWeather(weatherData);
+        return DateWeather.builder()
+                .date(LocalDate.now())
+                .weather(parsedWeather.get("main").toString())
+                .temperature((Double) parsedWeather.get("temp"))
+                .icon(parsedWeather.get("main").toString())
+                .build();
+    }
+
+    @Transactional
+    public void createDiary(LocalDate date, String text) {
+        // DB에서 확인하기
+        DateWeather weather = dateWeatherRepository.findById(date)
+                .orElseThrow(() -> new IllegalArgumentException("date 정보가 없습니다."));
 
         // 파싱된 데이터 + 일기 값 우리 db에 넣기
         Diary nowDiary = new Diary();
-        nowDiary.setWeather(parsedWeather.get("main").toString());
-        nowDiary.setIcon(parsedWeather.get("icon").toString());
-        nowDiary.setTemperature((Double) parsedWeather.get("temp"));
+        nowDiary.setDateWeather(weather);
         nowDiary.setText(text);
         nowDiary.setDate(date);
         diaryRepository.save(nowDiary);
