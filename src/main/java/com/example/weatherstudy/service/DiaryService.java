@@ -2,6 +2,7 @@ package com.example.weatherstudy.service;
 
 import com.example.weatherstudy.domain.DateWeather;
 import com.example.weatherstudy.domain.Diary;
+import com.example.weatherstudy.error.InvalidDate;
 import com.example.weatherstudy.repository.DateWeatherRepository;
 import com.example.weatherstudy.repository.DiaryRepository;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +24,6 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @Service
 @Slf4j
@@ -89,7 +89,7 @@ public class DiaryService {
             if (responseCode == 200) {
                 br = new BufferedReader(new InputStreamReader(connection.getInputStream()));
             } else {
-                br = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                br = new BufferedReader(new InputStreamReader(connection.getErrorStream()));
             }
 
             String inputLine;
@@ -127,6 +127,9 @@ public class DiaryService {
     }
 
     public List<Diary> readDiary(LocalDate date) {
+        if (date.isAfter(LocalDate.ofYearDay(3050, 1))) {
+            throw new InvalidDate();
+        }
         return diaryRepository.findAllByDate(date);
     }
 
@@ -139,7 +142,6 @@ public class DiaryService {
         Diary nowDiary = diaryRepository.getFirstByDate(date);
         nowDiary.setText(text);
     }
-
 
     public void deleteDiary(LocalDate date) {
         diaryRepository.deleteAllByDate(date);
