@@ -29,10 +29,7 @@ import java.util.Map;
 @Slf4j
 @RequiredArgsConstructor
 public class DiaryService {
-    // 왜 @Value를 사용해서 key를 가져오는 것인가???
-    // -> test나 실제에 따라 여러가지가 변경될 수 있기 때문에
-    // 변경과 무관하게 사용하기 위해 사용한다.
-    // 예를 들면 DB변경
+
     @Value("${openweathermap.key}")
     private String apiKey;
 
